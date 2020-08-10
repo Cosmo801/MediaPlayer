@@ -12,24 +12,26 @@ namespace MediaPlayer.AudioPlayback
     public class WaveFilePlayback : IAudioPlayback
     {
         private string waveFile;
+        private AudioPlaybackOptions playbackOptions;
+        private byte[] allAudioData;
 
         public WaveFilePlayback(string filePath)
         {
             this.waveFile = filePath;
+            readFile();
         }
         
-        
-
-
-
-        public void Play()
+        //Read the WAV file and populate the playback options
+        private void readFile()
         {
             if (waveFile == null) throw new FileNotFoundException("Could not find wave file");
 
             byte[] header = new byte[4];
             byte[] body;
 
-            using(BinaryReader reader = new BinaryReader(File.OpenRead(waveFile)))
+            playbackOptions = new AudioPlaybackOptions();
+
+            using (BinaryReader reader = new BinaryReader(File.OpenRead(waveFile)))
             {
                 //Skip unimportant parts
                 reader.ReadBytes(4);
@@ -53,37 +55,45 @@ namespace MediaPlayer.AudioPlayback
 
                 //Process format header
 
-                
-                //Tells the length of the format subchunk (eg 16 most commonly)
+
+                //Tells the length of the format subchunk (eg 16 most commonly) Fix for different formats later
                 short audioFormat = BitConverter.ToInt16(body, 8);
 
                 //Mono/stereo
-                short numChannels = BitConverter.ToInt16(body, 10);
+                playbackOptions.NumChannels = BitConverter.ToInt16(body, 10);
 
                 //Number of samples (ie audio frames) per second
-                int sampleRate = BitConverter.ToInt32(body, 12);
+                playbackOptions.SampleRate = BitConverter.ToInt32(body, 12);
 
                 //Number of bits per sample for each sample for each channel
-                int byteRate = BitConverter.ToInt32(body, 16);
-                //kbps
-                int bitRate = byteRate * 8;
-
+                playbackOptions.BitRate = BitConverter.ToInt32(body, 16) * 8;
+                
                 //Number of bits per each sample
-                short bitsPerSample = BitConverter.ToInt16(body, 20);
-
-
-
+                playbackOptions.BitsPerSample = BitConverter.ToInt16(body, 20);
 
                 //Find start and end position of actual audio data
                 int dataChunkStart = formatChunkEnd + 8;
                 int dataChunkEnd = 0;
                 dataChunkEnd = BitConverter.ToInt32(body, dataChunkStart);
-                
+
+                playbackOptions.AudioStart = dataChunkStart;
+                playbackOptions.AudioEnd = dataChunkEnd;
+
                 //Now we have the format information and the audio data
                 //Need to play possibly using c or c++
 
 
             }
+
+            int n = 5;
+            
+        }
+
+
+        public void Play()
+        {
+            //Use WAVEOUT api and playback options
+            //https://docs.microsoft.com/en-us/windows/win32/api/mmeapi/nf-mmeapi-waveoutopen
 
 
         }
