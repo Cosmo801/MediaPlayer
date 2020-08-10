@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace MediaPlayer.AudioPlayback
 {
+    //http://soundfile.sapp.org/doc/WaveFormat/
+    //Uncompressed formats have lossless audio
     public class WaveFilePlayback : IAudioPlayback
     {
         private string waveFile;
@@ -39,7 +41,6 @@ namespace MediaPlayer.AudioPlayback
                 //Fix endianess
                 int chunkSize = 0;
                 chunkSize = BitConverter.ToInt32(header, 0);
-                Console.WriteLine($"Chunk size is {chunkSize}");
 
 
                 body = new byte[chunkSize - 4];
@@ -47,20 +48,39 @@ namespace MediaPlayer.AudioPlayback
                 reader.Read(body, 0, body.Length);
 
                 //Fix endianess
-                int formatChunkStart = 0;
                 int formatChunkEnd = 0;
-                formatChunkEnd = BitConverter.ToInt32(body, 4);
-                Console.WriteLine($"Format chunk size is {formatChunkEnd}");
+                formatChunkEnd = BitConverter.ToInt32(body, 4) + 4;
 
                 //Process format header
 
-                short audioFormat = BitConverter.ToInt16(body, 8);
-                short numChannels = BitConverter.ToInt16(body, 10);
-                int sampleRate = BitConverter.ToInt32(body, 12);
-                int byteRate = BitConverter.ToInt32(body, 16);
-                int bitsPerSample = (byteRate * 8) / (numChannels * sampleRate);
-
                 
+                //Tells the length of the format subchunk (eg 16 most commonly)
+                short audioFormat = BitConverter.ToInt16(body, 8);
+
+                //Mono/stereo
+                short numChannels = BitConverter.ToInt16(body, 10);
+
+                //Number of samples (ie audio frames) per second
+                int sampleRate = BitConverter.ToInt32(body, 12);
+
+                //Number of bits per sample for each sample for each channel
+                int byteRate = BitConverter.ToInt32(body, 16);
+                //kbps
+                int bitRate = byteRate * 8;
+
+                //Number of bits per each sample
+                short bitsPerSample = BitConverter.ToInt16(body, 20);
+
+
+
+
+                //Find start and end position of actual audio data
+                int dataChunkStart = formatChunkEnd + 8;
+                int dataChunkEnd = 0;
+                dataChunkEnd = BitConverter.ToInt32(body, dataChunkStart);
+                
+                //Now we have the format information and the audio data
+                //Need to play possibly using c or c++
 
 
             }
